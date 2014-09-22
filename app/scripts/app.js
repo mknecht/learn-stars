@@ -17,6 +17,7 @@ angular
     'ngTouch',
     'flow'
   ])
+  .constant("jQuery", window.$)
   .config(function ($routeProvider) {
     $routeProvider
       .when('/', {
