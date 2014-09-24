@@ -15,6 +15,46 @@ app.factory('starFinder',
       var white = 255
       var black = 0
 
+      /**
+       * Resolves the deferred, if executed asynchronously,
+       * i.e. outside of an Angular digest cycle.
+       *
+       * $apply is needed, because nextTick() is used in .resolve()
+       * and we need to make sure Angular is aware a tick is necessary.
+       * (Which does not happen in unit tests.)
+       * http://comments.gmane.org/gmane.comp.lang.javascript.angularjs/6717
+       */
+      function resolveWithAngular(deferred, value) {
+        $rootScope.$apply(function() {
+          deferred.resolve(value)
+        })
+      }
+
+      Caman.Filter.register('histogram', function(deferred) {
+        var histogram = {}
+        this.process('histogram', function(rgba) {
+          var luminance = Caman.Calculate.luminance(rgba) | 0
+          histogram[luminance] = histogram[luminance] + 1 || 1
+          if (rgba.loc === rgba.c.pixelData.length - 3 - 1) {
+            resolveWithAngular(deferred, histogram)
+          }
+          return rgba
+        })
+        return this
+      })
+
+      function determineThreshold(percentageOfArea, histogram, caman)   {
+        // min-pixels need to be a few, so that small test cases work, too.
+        var minPixels = (Math.max(100, caman.dimensions.height * caman.dimensions.width) * percentageOfArea / 100) | 0
+        var accumulatedPixels = 0
+        var luminance = 255
+        while (luminance > 0 && accumulatedPixels < minPixels) {
+          accumulatedPixels += histogram[luminance] || 0
+          luminance -= 1
+        }
+        return Math.max(0, Math.min(255, luminance + 1))
+      }
+
       function findWhiteAreas(caman) {
         var maxrange = caman.dimensions.width * caman.dimensions.height
         var areaUsingCounters
@@ -64,22 +104,25 @@ app.factory('starFinder',
 
       return {
         findStars: function(caman) {
-          // TODO determine automatically by histogram analysis
-          var brightnessThreshold = 50
-          var deferred = $q.defer()
-
-          caman.threshold(brightnessThreshold).render(function() {
-            var that = this
-            // $apply is needed, because nextTick() is used in .resolve()
-            // and we need to make sure Angular is aware a tick is necessary.
-            // (Which does not happen in unit tests.)
-            // http://comments.gmane.org/gmane.comp.lang.javascript.angularjs/6717
-            $rootScope.$apply(function () {
-              deferred.resolve(selectCenters(findWhiteAreas(that)))
-            });
+          var deferredStars = $q.defer()
+          var deferredThreshold = $q.defer()
+          caman
+            .histogram(deferredThreshold)
+            .render()
+          deferredThreshold.promise.then(function(histogram) {
+            var brightnessThreshold = determineThreshold(
+              5, // Percentage of image area, starting with the brightest.
+              histogram,
+              caman
+            )
+            caman.threshold(brightnessThreshold).render(function() {
+              var that = this
+              resolveWithAngular(
+                deferredStars, selectCenters(findWhiteAreas(that)))
+            })
           })
 
-          return deferred.promise
+          return deferredStars.promise
         }
       }
     }])
