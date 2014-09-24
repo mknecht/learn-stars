@@ -18,6 +18,7 @@ angular
     'flow'
   ])
   .constant("jQuery", window.$)
+  .constant("Caman", window.Caman)
   .config(function ($routeProvider) {
     $routeProvider
       .when('/', {

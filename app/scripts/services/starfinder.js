@@ -7,50 +7,54 @@
  * # starFinder
  * Factory in the learnStarsApp.
  */
-angular.module('learnStarsApp')
-       .factory('starFinder', function () {
+var app = angular.module('learnStarsApp')
+app.factory('starFinder',
+  ['$q', '$rootScope', 'Caman',
+    function ($q, $rootScope, Caman) {
+      var white = 255
+      var black = 0
 
-  var brightnessThreshold = 50
+      ;(function(filterName) {
+        Caman.Filter.register(filterName, function(threshold) {
+          this.process(filterName, function(rgba) {
+            var luminance = Caman.Calculate.luminance(rgba)
+            rgba.r = rgba.g = rgba.b = luminance > threshold ? white : black
+            rgba.a = 255
+            return rgba
+          })
+          return this
+        })
+      })("applyThreshold")
 
-  // http://www.w3.org/TR/AERT#color-contrast
-  function calcBrightness(r, g, b, a) {
-    return (
-      (
-        r * 299
-      + g * 587
-      + b * 114
-      ) / 1000
-    )
-  }
-
-  function applyThreshold(original, threshold) {
-      var i
-      var colorCounter = 0
-
-      for (i = 0; i < original.width * original.height * 4; i += 4) {
-        var brightness = calcBrightness(
-          original.data[i + 0],
-          original.data[i + 1],
-          original.data[i + 2],
-          original.data[i + 3]
-        )
-
-        colorCounter += (brightness > threshold) ? 1 : 0
-        var color = (brightness > threshold) ? 255 : 0
-
-        original.data[i + 0] = color
-        original.data[i + 1] = color
-        original.data[i + 2] = color
-        original.data[i + 3] = 255
+      function findWhitePixels(caman) {
+        var i
+        var whitePixels = []
+        for (i = 0; i < caman.pixelData.length; i += 4) {
+          if (caman.pixelData[i] === white) {
+            whitePixels.push([(i / 4) % caman.dimensions.width, ((i / 4) / caman.dimensions.width) | 0])
+          }
+        }
+        return whitePixels
       }
-    }
 
+      return {
+        findStars: function(caman) {
+          // TODO determine automatically by histogram analysis
+          var brightnessThreshold = 50
+          var deferred = $q.defer()
 
-  return {
-    findStars: function(imageData) {
-      return [[1,1]]
-      applyThreshold(imageData, brightnessThreshold)
-      return findCenters(findConnectedWhiteAreas(imageData))
-    }
-  }
-})
+          caman.applyThreshold(brightnessThreshold).render(function() {
+            var that = this
+            // $apply is needed, because nextTick() is used in .resolve()
+            // and we need to make sure Angular is aware a tick is necessary.
+            // (Which does not happen in unit tests.)
+            // http://comments.gmane.org/gmane.comp.lang.javascript.angularjs/6717
+            $rootScope.$apply(function () {
+              deferred.resolve(findWhitePixels(that))
+            });
+          })
+
+          return deferred.promise
+        }
+      }
+    }])
