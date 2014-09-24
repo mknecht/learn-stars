@@ -64,4 +64,28 @@ describe('Service: starFinder.findsStars', function () {
       })
     })
   })
+
+  it('bluish image with 1 bright area finds 1 star', function (done) {
+    var canvas = angular.element('<canvas></canvas>')
+    Caman(canvas[0], "test/images/5x3-bluish-1-big-star.png", function() {
+      starFinder
+        .findStars(this)
+        .then(function(stars) {
+          expect(stars.length).toEqual(1)
+        done()
+      })
+    })
+  })
+
+  it('bluish image with 2 bright areas finds 2 stars', function (done) {
+    var canvas = angular.element('<canvas></canvas>')
+    Caman(canvas[0], "test/images/5x3-bluish-2-big-stars.png", function() {
+      starFinder
+        .findStars(this)
+        .then(function(stars) {
+          expect(stars.length).toEqual(2)
+        done()
+      })
+    })
+  })
 })

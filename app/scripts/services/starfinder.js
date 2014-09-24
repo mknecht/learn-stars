@@ -1,3 +1,4 @@
+/*global Uint8Array */
 'use strict';
 
 /**
@@ -14,6 +15,8 @@ app.factory('starFinder',
       var white = 255
       var black = 0
 
+      // TODO so there is a threshold plugin after all:
+      // https://github.com/meltingice/CamanJS-Plugins/blob/master/src/threshold.coffee
       ;(function(filterName) {
         Caman.Filter.register(filterName, function(threshold) {
           this.process(filterName, function(rgba) {
@@ -26,15 +29,51 @@ app.factory('starFinder',
         })
       })("applyThreshold")
 
-      function findWhitePixels(caman) {
+      function findWhiteAreas(caman) {
+        var maxrange = caman.dimensions.width * caman.dimensions.height
+        var areaUsingCounters
+        var ctr
         var i
-        var whitePixels = []
-        for (i = 0; i < caman.pixelData.length; i += 4) {
-          if (caman.pixelData[i] === white) {
-            whitePixels.push([(i / 4) % caman.dimensions.width, ((i / 4) / caman.dimensions.width) | 0])
+        var known = Uint8Array(maxrange)
+        var stack = []
+        var top
+        var whiteAreas = []
+
+        function addToStackIfUnknownAndWhite(origin, xdiff, ydiff) {
+          var ctr = Math.max(0, Math.min(maxrange, origin + xdiff + ydiff * caman.dimensions.width))
+          if (caman.pixelData[ctr * 4] === white && !known[ctr]) {
+            stack.push(ctr)
+            known[ctr] = true
           }
         }
-        return whitePixels
+
+        for (i = 0; i < caman.pixelData.length; i += 4) {
+          ctr = i / 4
+          addToStackIfUnknownAndWhite(ctr, 0, 0)
+          areaUsingCounters = []
+          while (top = stack.pop()) {
+            areaUsingCounters.push(top)
+            addToStackIfUnknownAndWhite(top, -1, 0)
+            addToStackIfUnknownAndWhite(top, +1, 0)
+            addToStackIfUnknownAndWhite(top, 0, -1)
+            addToStackIfUnknownAndWhite(top, 0, +1)
+          }
+          if (areaUsingCounters.length > 0) {
+            whiteAreas.push(areaUsingCounters.map(
+              function(pixelCounter) {
+                return [
+                  pixelCounter % caman.dimensions.width
+                , (pixelCounter / caman.dimensions.width) | 0
+                ]}))
+          }
+        }
+        return whiteAreas
+      }
+
+      function selectCenters(areas) {
+        return areas.map(function(area) {
+          return area[0]
+        })
       }
 
       return {
@@ -50,7 +89,7 @@ app.factory('starFinder',
             // (Which does not happen in unit tests.)
             // http://comments.gmane.org/gmane.comp.lang.javascript.angularjs/6717
             $rootScope.$apply(function () {
-              deferred.resolve(findWhitePixels(that))
+              deferred.resolve(selectCenters(findWhiteAreas(that)))
             });
           })
 
