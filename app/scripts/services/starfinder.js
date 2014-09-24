@@ -15,20 +15,6 @@ app.factory('starFinder',
       var white = 255
       var black = 0
 
-      // TODO so there is a threshold plugin after all:
-      // https://github.com/meltingice/CamanJS-Plugins/blob/master/src/threshold.coffee
-      ;(function(filterName) {
-        Caman.Filter.register(filterName, function(threshold) {
-          this.process(filterName, function(rgba) {
-            var luminance = Caman.Calculate.luminance(rgba)
-            rgba.r = rgba.g = rgba.b = luminance > threshold ? white : black
-            rgba.a = 255
-            return rgba
-          })
-          return this
-        })
-      })("applyThreshold")
-
       function findWhiteAreas(caman) {
         var maxrange = caman.dimensions.width * caman.dimensions.height
         var areaUsingCounters
@@ -82,7 +68,7 @@ app.factory('starFinder',
           var brightnessThreshold = 50
           var deferred = $q.defer()
 
-          caman.applyThreshold(brightnessThreshold).render(function() {
+          caman.threshold(brightnessThreshold).render(function() {
             var that = this
             // $apply is needed, because nextTick() is used in .resolve()
             // and we need to make sure Angular is aware a tick is necessary.
