@@ -25,9 +25,16 @@ module.exports = function(config) {
       'bower_components/angular-route/angular-route.js',
       'bower_components/angular-sanitize/angular-sanitize.js',
       'bower_components/angular-touch/angular-touch.js',
+      'bower_components/flow.js/dist/flow.js',
+      'bower_components/ng-flow/dist/ng-flow.js',
+      // Need the shim for Caman, because PhantomJS < 2.0
+      // does not define Function.prototype.bind
+      // https://github.com/ariya/phantomjs/issues/10522
+      'bower_components/es5-shim/es5-shim.min.js',
+      'bower_components/caman/dist/caman.full.js',
       'app/scripts/**/*.js',
-      'test/mock/**/*.js',
-      'test/spec/**/*.js'
+      'test/spec/**/*.js',
+      {pattern: 'test/images/*.png', watched: true, served: true, included: false}
     ],
 
     // list of files / patterns to exclude
@@ -45,12 +52,14 @@ module.exports = function(config) {
     // - PhantomJS
     // - IE (only Windows)
     browsers: [
-      'PhantomJS'
+     'PhantomJS'
+      // 'Firefox'
     ],
 
     // Which plugins to enable
     plugins: [
       'karma-phantomjs-launcher',
+      'karma-firefox-launcher',
       'karma-jasmine'
     ],
 
@@ -69,6 +78,6 @@ module.exports = function(config) {
     //   '/': 'http://localhost:9000/'
     // },
     // URL root prevent conflicts with the site root
-    // urlRoot: '_karma_'
+    urlRoot: 'base'
   });
 };

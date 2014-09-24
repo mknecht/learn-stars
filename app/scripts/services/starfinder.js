@@ -23,9 +23,7 @@ angular.module('learnStarsApp')
     )
   }
 
-  return {
-    produceBlackAndWhite: function (context, original) {
-      var bw = context.createImageData(original.width, original.height)
+  function applyThreshold(original, threshold) {
       var i
       var colorCounter = 0
 
@@ -37,16 +35,22 @@ angular.module('learnStarsApp')
           original.data[i + 3]
         )
 
-        colorCounter += (brightness > brightnessThreshold) ? 1 : 0
-        var color = (brightness > brightnessThreshold) ? 255 : 0
+        colorCounter += (brightness > threshold) ? 1 : 0
+        var color = (brightness > threshold) ? 255 : 0
 
-        bw.data[i + 0] = color
-        bw.data[i + 1] = color
-        bw.data[i + 2] = color
-        bw.data[i + 3] = 255
+        original.data[i + 0] = color
+        original.data[i + 1] = color
+        original.data[i + 2] = color
+        original.data[i + 3] = 255
       }
+    }
 
-      return bw
+
+  return {
+    findStars: function(imageData) {
+      return [[1,1]]
+      applyThreshold(imageData, brightnessThreshold)
+      return findCenters(findConnectedWhiteAreas(imageData))
     }
   }
 })
