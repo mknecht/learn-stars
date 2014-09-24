@@ -32,9 +32,11 @@ describe('Service: starFinder.findsStars', function () {
       starFinder
         .findStars(this)
         .then(function(stars) {
-          expect(stars.length).toEqual(1)
-          expect(stars).toEqual([[1, 1]])
-          done()
+        expect(stars.length).toEqual(1)
+        expect(stars).toEqual([
+          [[1, 1], 1]
+        ])
+        done()
       })
     })
   })
@@ -45,9 +47,11 @@ describe('Service: starFinder.findsStars', function () {
       starFinder
         .findStars(this)
         .then(function(stars) {
-          expect(stars.length).toEqual(1)
-          expect(stars).toEqual([[1, 1]])
-          done()
+        expect(stars.length).toEqual(1)
+        expect(stars).toEqual([
+          [[1, 1], 1]
+        ])
+        done()
       })
     })
   })
@@ -58,8 +62,11 @@ describe('Service: starFinder.findsStars', function () {
       starFinder
         .findStars(this)
         .then(function(stars) {
-          expect(stars.length).toEqual(2)
-          expect(stars).toEqual([[1, 1], [3, 1]])
+        expect(stars.length).toEqual(2)
+        expect(stars).toEqual([
+          [[1, 1], 1],
+          [[3, 1], 1],
+        ])
         done()
       })
     })
@@ -77,6 +84,20 @@ describe('Service: starFinder.findsStars', function () {
     })
   })
 
+  it('bluish image with 1 bright area finds correct center and radius', function (done) {
+    var canvas = angular.element('<canvas></canvas>')
+    Caman(canvas[0], "test/images/5x3-bluish-1-big-star.png", function() {
+      starFinder
+        .findStars(this)
+        .then(function(stars) {
+        expect(stars).toEqual([
+          [[2, 1], 2],
+        ])
+        done()
+      })
+    })
+  })
+
   it('bluish image with 2 bright areas finds 2 stars', function (done) {
     var canvas = angular.element('<canvas></canvas>')
     Caman(canvas[0], "test/images/5x3-bluish-2-big-stars.png", function() {
@@ -84,6 +105,21 @@ describe('Service: starFinder.findsStars', function () {
         .findStars(this)
         .then(function(stars) {
           expect(stars.length).toEqual(2)
+        done()
+      })
+    })
+  })
+
+  it('bluish image with 2 bright areas finds correct center and radius', function (done) {
+    var canvas = angular.element('<canvas></canvas>')
+    Caman(canvas[0], "test/images/5x3-bluish-2-big-stars.png", function() {
+      starFinder
+        .findStars(this)
+        .then(function(stars) {
+        expect(stars).toEqual([
+          [[1, 1], 1],
+          [[3, 1], 1], /** This center is somewhat arbitrary, but fixed now. */
+        ])
         done()
       })
     })

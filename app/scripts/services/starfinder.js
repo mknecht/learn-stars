@@ -85,20 +85,44 @@ app.factory('starFinder',
             addToStackIfUnknownAndWhite(top, 0, +1)
           }
           if (areaUsingCounters.length > 0) {
-            whiteAreas.push(areaUsingCounters.map(
-              function(pixelCounter) {
-                return [
-                  pixelCounter % caman.dimensions.width
-                , (pixelCounter / caman.dimensions.width) | 0
-                ]}))
+            whiteAreas.push(areaUsingCounters.map(function(pixelCounter) {
+              return [
+                pixelCounter % caman.dimensions.width
+              , (pixelCounter / caman.dimensions.width) | 0
+              ]}))
           }
         }
         return whiteAreas
       }
 
-      function selectCenters(areas) {
+      function selectCenterAndRadius(areas) {
         return areas.map(function(area) {
-          return area[0]
+          var minMax = area.reduce(function(previous, value) {
+              return {
+                x: {
+                  min: Math.min(previous.x.min, value[0]),
+                  max: Math.max(previous.x.max, value[0]),
+                },
+                y: {
+                  min: Math.min(previous.y.min, value[1]),
+                  max: Math.max(previous.y.max, value[1]),
+                }
+              }
+            },
+            {
+              x: {min: Number.MAX_VALUE, max: 0},
+              y:{min: Number.MAX_VALUE, max: 0}
+            }
+          )
+          var maxXDistance = ((minMax.x.max - minMax.x.min) / 2) | 0
+          var maxYDistance = ((minMax.y.max - minMax.y.min) / 2) | 0
+          return [
+            [
+              minMax.x.max - maxXDistance,
+              minMax.y.max - maxYDistance,
+            ],
+            1 + Math.max(maxXDistance, maxYDistance)
+          ]
         })
       }
 
@@ -118,7 +142,7 @@ app.factory('starFinder',
             caman.threshold(brightnessThreshold).render(function() {
               var that = this
               resolveWithAngular(
-                deferredStars, selectCenters(findWhiteAreas(that)))
+                deferredStars, selectCenterAndRadius(findWhiteAreas(that)))
             })
           })
 
