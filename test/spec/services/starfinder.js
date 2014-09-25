@@ -191,4 +191,30 @@ describe('Service: starFinder.findsStars', function () {
     })
   })
 
+  it('Hyades finds prominent stars, but not "noisy" stars', function (done) {
+    var canvas = angular.element('<canvas></canvas>')
+    Caman(canvas[0], "test/images/hyades.jpg", function() {
+      starFinder
+        .findStars(this)
+        .then(function(stars) {
+          // Seems like a reasonable fuzzy test. :)
+          // First time I ran it, I got close to 20k stars! :)
+          expect(stars.length).toBeGreaterThan(1000)
+          // bright star in the middle, lower third
+          expect(stars).toContainStarAt({x:907, y:947})
+          // bright star left third, middle
+          expect(stars).toContainStarAt({x:483, y:675})
+          // one of many in upper right corner
+          expect(stars).toContainStarAt({x:1894, y:82})
+          // a small bluish dot that is far inferior
+          // to many, many others.
+          // It seems reasonable to want to exclude that one.
+          //          expect(stars).not.toContainStarAt({x:294, y:328})
+          // negative test
+          expect(stars).not.toContainStarAt({x:1708, y:148})
+          done()
+        })
+    })
+  })
+
 })
