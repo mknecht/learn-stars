@@ -1,4 +1,4 @@
-/*global angular expect inject beforeEach module describe Caman it */
+/*global angular expect inject beforeEach module describe Caman it jasmine */
 'use strict';
 
 describe('Service: starFinder.findsStars', function () {
@@ -11,9 +11,52 @@ describe('Service: starFinder.findsStars', function () {
   var canvas
 
   beforeEach(inject(function (_starFinder_) {
-               canvas = angular.element('<canvas></canvas>')
-               starFinder = _starFinder_
-             }))
+    canvas = angular.element('<canvas></canvas>')
+    starFinder = _starFinder_
+
+    jasmine.addMatchers({
+      toContainStarAt: function(util, customEqualityTesters) {
+        return {
+          compare: function(stars, pos) {
+            if (stars.length === 0) {
+              return "Did not find any stars at all."
+            }
+            var closest = stars.reduce(
+              function(data, star) {
+                var distance = Caman.Calculate.distance(
+                  star.pos.x, star.pos.y, pos.x, pos.y)
+                if (distance < data.distance) {
+                  data.star = star
+                  data.match = (distance < star.radius)
+                  data.distance = distance
+                }
+                return data
+              }, {
+                star: undefined,
+                match: false,
+                distance: Number.MAX_VALUE
+              }
+            )
+            var result = {
+              pass: closest.match,
+            }
+            if (!result.pass) {
+              var distance = Caman.Calculate.distance(
+                pos.x, pos.y, closest.star.pos.x, closest.star.pos.y)
+              result.message = (
+                "Did not find a star at (" + pos.x + "," + pos.y + ")."
+                                + " The closest star is at (" + closest.star.pos.x
+                                + "," + closest.star.pos.y + "),"
+                                + " which is " + (distance|0) + "px away and "
+                                + ((distance - closest.star.radius)|0) + "px too many."
+              )
+            }
+            return result
+          }
+        }
+      }
+    })
+  }))
 
   it('bw image without bright spots finds nothing', function (done) {
     Caman(canvas[0], "test/images/3x3-bw-0stars.png", function() {
@@ -22,7 +65,7 @@ describe('Service: starFinder.findsStars', function () {
         .then(function(stars) {
           expect(stars.length).toEqual(0)
           done()
-      })
+        })
     })
   })
 
@@ -32,12 +75,12 @@ describe('Service: starFinder.findsStars', function () {
       starFinder
         .findStars(this)
         .then(function(stars) {
-        expect(stars.length).toEqual(1)
-        expect(stars).toEqual([
-          [[1, 1], 1]
-        ])
-        done()
-      })
+          expect(stars.length).toEqual(1)
+          expect(stars).toEqual([
+            {pos: {x:1, y:1}, radius:1}
+          ])
+          done()
+        })
     })
   })
 
@@ -47,12 +90,12 @@ describe('Service: starFinder.findsStars', function () {
       starFinder
         .findStars(this)
         .then(function(stars) {
-        expect(stars.length).toEqual(1)
-        expect(stars).toEqual([
-          [[1, 1], 1]
-        ])
-        done()
-      })
+          expect(stars.length).toEqual(1)
+          expect(stars).toEqual([
+            {pos: {x:1, y:1}, radius:1}
+          ])
+          done()
+        })
     })
   })
 
@@ -62,13 +105,13 @@ describe('Service: starFinder.findsStars', function () {
       starFinder
         .findStars(this)
         .then(function(stars) {
-        expect(stars.length).toEqual(2)
-        expect(stars).toEqual([
-          [[1, 1], 1],
-          [[3, 1], 1],
-        ])
-        done()
-      })
+          expect(stars.length).toEqual(2)
+          expect(stars).toEqual([
+            {pos: {x:1, y:1}, radius:1},
+            {pos: {x:3, y:1}, radius:1},
+          ])
+          done()
+        })
     })
   })
 
@@ -79,8 +122,8 @@ describe('Service: starFinder.findsStars', function () {
         .findStars(this)
         .then(function(stars) {
           expect(stars.length).toEqual(1)
-        done()
-      })
+          done()
+        })
     })
   })
 
@@ -90,11 +133,11 @@ describe('Service: starFinder.findsStars', function () {
       starFinder
         .findStars(this)
         .then(function(stars) {
-        expect(stars).toEqual([
-          [[2, 1], 2],
-        ])
-        done()
-      })
+          expect(stars).toEqual([
+            {pos: {x:2, y:1}, radius:2}
+          ])
+          done()
+        })
     })
   })
 
@@ -105,8 +148,8 @@ describe('Service: starFinder.findsStars', function () {
         .findStars(this)
         .then(function(stars) {
           expect(stars.length).toEqual(2)
-        done()
-      })
+          done()
+        })
     })
   })
 
@@ -116,12 +159,36 @@ describe('Service: starFinder.findsStars', function () {
       starFinder
         .findStars(this)
         .then(function(stars) {
-        expect(stars).toEqual([
-          [[1, 1], 1],
-          [[3, 1], 1], /** This center is somewhat arbitrary, but fixed now. */
-        ])
-        done()
-      })
+          expect(stars).toEqual([
+            {pos: {x:1, y:1}, radius:1},
+            /** This center is somewhat arbitrary, but fixed now. */
+            {pos: {x:3, y:1}, radius:1},
+          ])
+          done()
+        })
     })
   })
+
+  it('Big Dipper (Juno) finds all 7 stars', function (done) {
+    var canvas = angular.element('<canvas></canvas>')
+    Caman(canvas[0], "test/images/big-dipper-juno.jpg", function() {
+      starFinder
+        .findStars(this)
+        .then(function(stars) {
+          // Handle
+          expect(stars).toContainStarAt({x:67, y:150}) // Alkaid
+          expect(stars).toContainStarAt({x:240, y:127}) // Mizar
+          expect(stars).toContainStarAt({x:340, y:179}) // Alioth
+          // Corners
+          expect(stars).toContainStarAt({x:469, y:237}) // Megrez
+          expect(stars).toContainStarAt({x:741, y:220}) // Dubhe
+          expect(stars).toContainStarAt({x:705, y:360}) // Merak
+          expect(stars).toContainStarAt({x:494, y:350}) // Phecda
+          // negative test
+          expect(stars).not.toContainStarAt({x:571, y:107}) // black space
+          done()
+        })
+    })
+  })
+
 })

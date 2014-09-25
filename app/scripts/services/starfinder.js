@@ -79,10 +79,14 @@ app.factory('starFinder',
           areaUsingCounters = []
           while (top = stack.pop()) {
             areaUsingCounters.push(top)
-            addToStackIfUnknownAndWhite(top, -1, 0)
-            addToStackIfUnknownAndWhite(top, +1, 0)
-            addToStackIfUnknownAndWhite(top, 0, -1)
-            addToStackIfUnknownAndWhite(top, 0, +1)
+            addToStackIfUnknownAndWhite(top, -1, -1)
+            addToStackIfUnknownAndWhite(top, +0, -1)
+            addToStackIfUnknownAndWhite(top, +1, -1)
+            addToStackIfUnknownAndWhite(top, +1, +0)
+            addToStackIfUnknownAndWhite(top, +1, +1)
+            addToStackIfUnknownAndWhite(top, +0, +1)
+            addToStackIfUnknownAndWhite(top, -1, +1)
+            addToStackIfUnknownAndWhite(top, -1, +0)
           }
           if (areaUsingCounters.length > 0) {
             whiteAreas.push(areaUsingCounters.map(function(pixelCounter) {
@@ -116,13 +120,13 @@ app.factory('starFinder',
           )
           var maxXDistance = ((minMax.x.max - minMax.x.min) / 2) | 0
           var maxYDistance = ((minMax.y.max - minMax.y.min) / 2) | 0
-          return [
-            [
-              minMax.x.max - maxXDistance,
-              minMax.y.max - maxYDistance,
-            ],
-            1 + Math.max(maxXDistance, maxYDistance)
-          ]
+          return {
+            pos: {
+              x: minMax.x.max - maxXDistance,
+              y: minMax.y.max - maxYDistance,
+            },
+            radius: 1 + Math.max(maxXDistance, maxYDistance)
+          }
         })
       }
 

@@ -34,7 +34,7 @@ module.exports = function(config) {
       'bower_components/caman/dist/caman.full.js',
       'app/scripts/**/*.js',
       'test/spec/**/*.js',
-      {pattern: 'test/images/*.png', watched: true, served: true, included: false}
+      {pattern: 'test/images/*.{png,jpg}', watched: true, served: true, included: false}
     ],
 
     // list of files / patterns to exclude
