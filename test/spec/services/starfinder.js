@@ -13,6 +13,7 @@ describe('Service: starFinder.findsStars', function () {
   beforeEach(inject(function (_starFinder_) {
     canvas = angular.element('<canvas></canvas>')
     starFinder = _starFinder_
+    Caman.DEBUG = true
 
     jasmine.addMatchers({
       toContainStarAt: function(util, customEqualityTesters) {
@@ -27,7 +28,7 @@ describe('Service: starFinder.findsStars', function () {
                   star.pos.x, star.pos.y, pos.x, pos.y)
                 if (distance < data.distance) {
                   data.star = star
-                  data.match = (distance < star.radius)
+                  data.match = (distance <= star.radius)
                   data.distance = distance
                 }
                 return data
@@ -77,7 +78,7 @@ describe('Service: starFinder.findsStars', function () {
         .then(function(stars) {
           expect(stars.length).toEqual(1)
           expect(stars).toEqual([
-            {pos: {x:1, y:1}, radius:1}
+            {pos: {x:1, y:1}, radius:0}
           ])
           done()
         })
@@ -92,7 +93,7 @@ describe('Service: starFinder.findsStars', function () {
         .then(function(stars) {
           expect(stars.length).toEqual(1)
           expect(stars).toEqual([
-            {pos: {x:1, y:1}, radius:1}
+            {pos: {x:1, y:1}, radius:0}
           ])
           done()
         })
@@ -107,8 +108,8 @@ describe('Service: starFinder.findsStars', function () {
         .then(function(stars) {
           expect(stars.length).toEqual(2)
           expect(stars).toEqual([
-            {pos: {x:1, y:1}, radius:1},
-            {pos: {x:3, y:1}, radius:1},
+            {pos: {x:1, y:1}, radius:0},
+            {pos: {x:3, y:1}, radius:0},
           ])
           done()
         })
@@ -134,7 +135,7 @@ describe('Service: starFinder.findsStars', function () {
         .findStars(this)
         .then(function(stars) {
           expect(stars).toEqual([
-            {pos: {x:2, y:1}, radius:2}
+            {pos: {x:2, y:1}, radius:1}
           ])
           done()
         })
@@ -160,7 +161,7 @@ describe('Service: starFinder.findsStars', function () {
         .findStars(this)
         .then(function(stars) {
           expect(stars).toEqual([
-            {pos: {x:1, y:1}, radius:1},
+            {pos: {x:1, y:1}, radius:0},
             /** This center is somewhat arbitrary, but fixed now. */
             {pos: {x:3, y:1}, radius:1},
           ])
@@ -177,10 +178,10 @@ describe('Service: starFinder.findsStars', function () {
         .then(function(stars) {
           // Handle
           expect(stars).toContainStarAt({x:67, y:150}) // Alkaid
-          expect(stars).toContainStarAt({x:240, y:127}) // Mizar
+          expect(stars).toContainStarAt({x:241, y:123}) // Mizar
           expect(stars).toContainStarAt({x:340, y:179}) // Alioth
           // Corners
-          expect(stars).toContainStarAt({x:469, y:237}) // Megrez
+          expect(stars).toContainStarAt({x:469, y:236}) // Megrez
           expect(stars).toContainStarAt({x:741, y:220}) // Dubhe
           expect(stars).toContainStarAt({x:705, y:360}) // Merak
           expect(stars).toContainStarAt({x:494, y:350}) // Phecda
@@ -197,21 +198,21 @@ describe('Service: starFinder.findsStars', function () {
       starFinder
         .findStars(this)
         .then(function(stars) {
-          // Seems like a reasonable fuzzy test. :)
-          // First time I ran it, I got close to 20k stars! :)
-          expect(stars.length).toBeGreaterThan(1000)
           // bright star in the middle, lower third
           expect(stars).toContainStarAt({x:907, y:947})
           // bright star left third, middle
-          expect(stars).toContainStarAt({x:483, y:675})
+          expect(stars).toContainStarAt({x:487, y:675})
           // one of many in upper right corner
           expect(stars).toContainStarAt({x:1894, y:82})
           // a small bluish dot that is far inferior
           // to many, many others.
           // It seems reasonable to want to exclude that one.
-          //          expect(stars).not.toContainStarAt({x:294, y:328})
+         expect(stars).not.toContainStarAt({x:294, y:328})
           // negative test
-          expect(stars).not.toContainStarAt({x:1708, y:148})
+         expect(stars).not.toContainStarAt({x:1708, y:148})
+          // Seems like a reasonable fuzzy test. :)
+          // First time I ran it, I got close to 20k stars! :)
+          expect(stars.length).toBeGreaterThan(1000)
           done()
         })
     })

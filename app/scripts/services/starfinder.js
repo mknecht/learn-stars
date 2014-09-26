@@ -16,6 +16,17 @@ app.factory('starFinder',
       var black = 0
 
       /**
+       * Monkey-patch a coherant luminance calculation.
+       * https://github.com/meltingice/CamanJS/issues/155
+       * Choosing the one from Filter.threshold(), since
+       * it's easier to fix and it's the one supported by WP ;)
+       * http://en.wikipedia.org/wiki/Relative_luminance
+       **/
+      Caman.Calculate.luminance = function(rgba) {
+        return (0.2126 * rgba.r) + (0.7152 * rgba.g) + (0.0722 * rgba.b)
+      }
+
+      /**
        * Resolves the deferred, if executed asynchronously,
        * i.e. outside of an Angular digest cycle.
        *
@@ -31,28 +42,64 @@ app.factory('starFinder',
       }
 
       Caman.Filter.register('histogram', function(deferred) {
-        var histogram = {}
+        function isLast(rgba) {
+          return rgba.loc === rgba.c.pixelData.length - 3 - 1
+        }
+        function evenOut(histogram) {
+//          console.log("====================================")
+//          histogram.forEach(function(it, idx) { console.log(idx + " = " + it) })
+          var first = histogram.reduce(function(data, value, idx) {
+            return (data !== undefined) ? data : ((value !== undefined) ? idx : data)
+          }, undefined)
+          var last = histogram.reduce(function(data, value, idx) {
+            return (value !== undefined) ? idx : data
+          }, undefined)
+          // In the pathological case of only one color,
+          // we leave the threshold as is.
+          var factor = ((last - first) > 0) ? (255 / (last - first)) : 1
+          console.log("factor: " + factor)
+          console.log("first: " + first)
+          console.log("last: " + last)
+          var evened = histogram.reduce(function(data, value, originalIndex) {
+            var newIndex = ((originalIndex - first) * factor) | 0
+            console.log(originalIndex + " -> " + newIndex)
+            data[newIndex] = (data[newIndex] || 0) + value
+            return data
+          }, [])
+          console.log("evened")
+          console.log("evened: " + evened)
+          evened.forEach(function(it, idx) { console.log(idx + " = " + it) })
+          return {data: evened, factor: factor, first: first}
+        }
+        var histogram = []
         this.process('histogram', function(rgba) {
           var luminance = Caman.Calculate.luminance(rgba) | 0
           histogram[luminance] = histogram[luminance] + 1 || 1
-          if (rgba.loc === rgba.c.pixelData.length - 3 - 1) {
-            resolveWithAngular(deferred, histogram)
+          if (isLast(rgba)) {
+            resolveWithAngular(deferred, evenOut(histogram))
           }
           return rgba
         })
         return this
       })
 
-      function determineThreshold(percentageOfArea, histogram, caman)   {
+      function determineThreshold(percentageOfArea, maxClasses, histogram, caman)   {
         // min-pixels need to be a few, so that small test cases work, too.
         var minPixels = (Math.max(100, caman.dimensions.height * caman.dimensions.width) * percentageOfArea / 100) | 0
         var accumulatedPixels = 0
         var luminance = 255
-        while (luminance > 0 && accumulatedPixels < minPixels) {
-          accumulatedPixels += histogram[luminance] || 0
+        var classesFound = 0
+        while (luminance > 0 && accumulatedPixels < minPixels && classesFound < maxClasses ) {
+          classesFound += 1
+          accumulatedPixels += histogram.data[luminance] || 0
           luminance -= 1
         }
-        return Math.max(0, Math.min(255, luminance + 1))
+        var thresholdOnBalanced = luminance + 1
+        console.log("balanced T: " + thresholdOnBalanced)
+        var thresholdOnOriginal = ((thresholdOnBalanced / histogram.factor) | 0) + histogram.first
+        console.log("original T: " + thresholdOnOriginal)
+        console.log("accumulated pixels: " + accumulatedPixels)
+        return Math.max(0, Math.min(255, thresholdOnOriginal))
       }
 
       function findWhiteAreas(caman) {
@@ -60,7 +107,7 @@ app.factory('starFinder',
         var areaUsingCounters
         var ctr
         var i
-        var known = Uint8Array(maxrange)
+        var known = new Uint8Array(maxrange)
         var stack = []
         var top
         var whiteAreas = []
@@ -101,31 +148,24 @@ app.factory('starFinder',
 
       function selectCenterAndRadius(areas) {
         return areas.map(function(area) {
-          var minMax = area.reduce(function(previous, value) {
-              return {
-                x: {
-                  min: Math.min(previous.x.min, value[0]),
-                  max: Math.max(previous.x.max, value[0]),
-                },
-                y: {
-                  min: Math.min(previous.y.min, value[1]),
-                  max: Math.max(previous.y.max, value[1]),
-                }
-              }
-            },
-            {
-              x: {min: Number.MAX_VALUE, max: 0},
-              y:{min: Number.MAX_VALUE, max: 0}
-            }
-          )
-          var maxXDistance = ((minMax.x.max - minMax.x.min) / 2) | 0
-          var maxYDistance = ((minMax.y.max - minMax.y.min) / 2) | 0
+          var cumulated = area.reduce(function(previous, value) {
+            return {x: previous.x + value[0], y: previous.y + value[1]}
+          }, {x: 0, y: 0})
+          var center = {
+            x: (cumulated.x / area.length) | 0,
+            y: (cumulated.y / area.length) | 0,
+          }
+          var radius = Math.max.apply(undefined, (area.map(function(value) {
+            return Math.ceil(Caman.Calculate.distance(
+              center.x, center.y, value[0], value[1]
+            ))
+          })))
           return {
             pos: {
-              x: minMax.x.max - maxXDistance,
-              y: minMax.y.max - maxYDistance,
+              x: center.x,
+              y: center.y,
             },
-            radius: 1 + Math.max(maxXDistance, maxYDistance)
+            radius: radius
           }
         })
       }
@@ -136,19 +176,28 @@ app.factory('starFinder',
           var deferredThreshold = $q.defer()
           caman
             .histogram(deferredThreshold)
-            .render()
-          deferredThreshold.promise.then(function(histogram) {
-            var brightnessThreshold = determineThreshold(
-              5, // Percentage of image area, starting with the brightest.
-              histogram,
-              caman
-            )
-            caman.threshold(brightnessThreshold).render(function() {
-              var that = this
-              resolveWithAngular(
-                deferredStars, selectCenterAndRadius(findWhiteAreas(that)))
+            .render(function() {
+              // By this time, the promise is resolved,
+              // i.e. we need another tick, because
+              // registering a then-method doe not short-circuit
+              // into direct execution. -_-
+              $rootScope.$apply(function() {
+                deferredThreshold.promise.then(function(histogram) {
+                  var brightnessThreshold = determineThreshold(
+                    5, // Percentage of image area, starting with the brightest.
+                    128, // Max number of brightest classes to include
+                    histogram,
+                    caman
+                  )
+                  console.log("brightness threshold: " + brightnessThreshold)
+                  caman.threshold(brightnessThreshold).render(function() {
+                    var that = this
+                    resolveWithAngular(
+                      deferredStars, selectCenterAndRadius(findWhiteAreas(that)))
+                  })
+                })
+              })
             })
-          })
 
           return deferredStars.promise
         }
