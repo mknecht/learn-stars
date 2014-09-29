@@ -19,6 +19,7 @@ angular
   ])
   .constant("jQuery", window.$)
   .constant("Caman", window.Caman)
+  .constant("fabric", window.fabric)
   .config(function ($routeProvider) {
     $routeProvider
       .when('/', {
