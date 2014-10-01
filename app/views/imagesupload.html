@@ -1,0 +1,22 @@
+<div flow-init
+     flow-files-submitted="$flow.upload()"
+     flow-file-success="$file.msg = $message"
+     flow-file-added="addingFile($file)"
+     >
+
+  <div class="drophere" flow-drop ng-hide="$flow.files.length > 0" flow-drag-enter="style={border:'4px solid green'}" flow-drag-leave="style={}" ng-style="style">
+    <span href="#" class="btn" flow-btn flow-attrs="{accept:'image/*'}">Upload a file</span> or drop it here.
+  </div>
+
+  <canvas id="fabric-canvas" ng-show="$flow.files.length"></canvas>
+  <canvas id="caman-canvas" ng-show="debug"></canvas>
+
+  <div>
+    <a href="#" class="btn" ng-hide="$flow.files.length" flow-btn flow-attrs="{accept:'image/*'}">Select image</a>
+    <a href="#" class="btn" ng-show="$flow.files.length" flow-btn flow-attrs="{accept:'image/*'}">Change</a>
+    <a href="#" class="btn btn-danger" ng-show="$flow.files.length"
+       ng-click="$flow.cancel()">Remove</a>
+  </div>
+
+
+</div>
