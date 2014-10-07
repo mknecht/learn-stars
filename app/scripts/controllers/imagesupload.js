@@ -11,8 +11,8 @@
 angular
   .module('learnStarsApp')
   .controller('ImagesuploadCtrl',
-    ['$scope', '$compile', 'jQuery', 'starFinder', 'Caman', 'fabric',
-      function ($scope, $compile, $, starFinder, Caman, fabric) {
+    ['$scope', '$compile', '$log', 'jQuery', 'starFinder', 'Caman', 'fabric',
+      function ($scope, $compile, $log, $, starFinder, Caman, fabric) {
         var $img = angular.element('<img/>')
 
         $scope.addingFile = function($file) {
@@ -67,7 +67,7 @@ angular
             Caman($camanCanvas[0], function() {
               var starsPromise = starFinder.findStars(this)
               starsPromise.then(function(stars) {
-                console.log("Found " + stars.length + " stars.")
+                $log.debug("Found " + stars.length + " stars.")
                 canvas.add(fimage);
                 stars.forEach(function(star) {
                   var circle = new fabric.Circle({

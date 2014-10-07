@@ -10,8 +10,8 @@
  */
 var app = angular.module('learnStarsApp')
 app.factory('starFinder',
-  ['$q', '$rootScope', 'Caman',
-    function ($q, $rootScope, Caman) {
+  ['$q', '$rootScope', '$log', 'Caman',
+    function ($q, $rootScope, $log, Caman) {
       var white = 255
       var black = 0
 
@@ -46,29 +46,26 @@ app.factory('starFinder',
           return rgba.loc === rgba.c.pixelData.length - 3 - 1
         }
         function evenOut(histogram) {
-//          console.log("====================================")
-//          histogram.forEach(function(it, idx) { console.log(idx + " = " + it) })
           var first = histogram.reduce(function(data, value, idx) {
             return (data !== undefined) ? data : ((value !== undefined) ? idx : data)
           }, undefined)
           var last = histogram.reduce(function(data, value, idx) {
             return (value !== undefined) ? idx : data
           }, undefined)
-          // In the pathological case of only one color,
+          // In the pathological/test case of only one color,
           // we leave the threshold as is.
           var factor = ((last - first) > 0) ? (255 / (last - first)) : 1
-          console.log("factor: " + factor)
-          console.log("first: " + first)
-          console.log("last: " + last)
+          $log.debug("Factor: " + factor)
+          $log.debug("First: " + first)
+          $log.debug("Last: " + last)
           var evened = histogram.reduce(function(data, value, originalIndex) {
             var newIndex = ((originalIndex - first) * factor) | 0
-            console.log(originalIndex + " -> " + newIndex)
+            $log.debug("Mapping histogram value #" + originalIndex + " -> #" + newIndex)
             data[newIndex] = (data[newIndex] || 0) + value
             return data
           }, [])
-          console.log("evened")
-          console.log("evened: " + evened)
-          evened.forEach(function(it, idx) { console.log(idx + " = " + it) })
+          $log.debug("Evened: " + evened)
+          evened.forEach(function(it, idx) { $log.debug(idx + " = " + it) })
           return {data: evened, factor: factor, first: first}
         }
         var histogram = []
@@ -95,10 +92,15 @@ app.factory('starFinder',
           luminance -= 1
         }
         var thresholdOnBalanced = luminance + 1
-        console.log("balanced T: " + thresholdOnBalanced)
+        $log.debug("Balanced Treshold: " + thresholdOnBalanced)
         var thresholdOnOriginal = ((thresholdOnBalanced / histogram.factor) | 0) + histogram.first
-        console.log("original T: " + thresholdOnOriginal)
-        console.log("accumulated pixels: " + accumulatedPixels)
+        $log.debug("Original Threshold: " + thresholdOnOriginal)
+        $log.debug("Accumulated pixels: " + accumulatedPixels + " ("
+                  + (
+                    (
+                      (accumulatedPixels * 100)
+                     / (caman.dimensions.width * caman.dimensions.height)
+                    ) | 0 ) + "%)")
         return Math.max(0, Math.min(255, thresholdOnOriginal))
       }
 
@@ -124,7 +126,7 @@ app.factory('starFinder',
           ctr = i / 4
           addToStackIfUnknownAndWhite(ctr, 0, 0)
           areaUsingCounters = []
-          while (top = stack.pop()) {
+          while ((top = stack.pop())) {
             areaUsingCounters.push(top)
             addToStackIfUnknownAndWhite(top, -1, -1)
             addToStackIfUnknownAndWhite(top, +0, -1)
@@ -189,7 +191,7 @@ app.factory('starFinder',
                     histogram,
                     caman
                   )
-                  console.log("brightness threshold: " + brightnessThreshold)
+                  $log.debug("Calculated threshold for brightness: " + brightnessThreshold)
                   caman.threshold(brightnessThreshold).render(function() {
                     var that = this
                     resolveWithAngular(
