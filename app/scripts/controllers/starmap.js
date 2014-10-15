@@ -81,9 +81,9 @@ angular
         controller.canvas.add(controller.fimage)
         stars.forEach(function(star) {
           var circle = new fabric.Circle({
-            left: star.pos.x,
-            top: star.pos.y,
             radius: Math.max(6, star.radius + 3),
+            left: scale(star.pos.x),
+            top: scale(star.pos.y),
             fill: 'transparent',
             originX: 'center',
             originY: 'center',
