@@ -47,6 +47,8 @@ angular
         this.canvas.on('mouse:up', function(options) {
           if (options.target.constructor === fabric.Circle) {
             options.target.toggleSelection()
+          } else {
+            addCircle(options.e.clientX, options.e.clientY, 10)
           }
         })
       }
@@ -73,17 +75,11 @@ angular
         }
       })
 
-      $scope.$on('found-stars', function(event, data) {
-        var stars = data.stars
-        $log.debug('Got stars to mark!')
-        var scale = getScalingFunctionForImage(controller.fimage)
-        controller.fimage.scale(scale(1))
-        controller.canvas.add(controller.fimage)
-        stars.forEach(function(star) {
+      function addCircle(x, y, radius) {
           var circle = new fabric.Circle({
-            left: scale(star.pos.x),
-            top: scale(star.pos.y),
-            radius: Math.max(15, star.radius + 3),
+            left: x,
+            top: y,
+            radius: radius,
             fill: 'transparent',
             originX: 'center',
             originY: 'center',
@@ -95,6 +91,7 @@ angular
           circle.toggleSelection = function() {
             this.isSelected = !this.isSelected
             this.updateColor()
+            controller.canvas.remove(this)
           }
           circle.toggleHovering = function() {
             this.isHoveredOn = !this.isHoveredOn
@@ -105,9 +102,21 @@ angular
             this.canvas.renderAll()
           }
 
-          circle.scale(scale(1))
           controller.canvas.add(circle)
-        })
+      }
+
+      $scope.$on('found-stars', function(event, data) {
+        var stars = data.stars
+        $log.debug('Got stars to mark!')
+        var scale = getScalingFunctionForImage(controller.fimage)
+        controller.fimage.scale(scale(1))
+        controller.canvas.add(controller.fimage)
+        // stars.forEach(function(star) {
+        //   addCircle(
+        //     scale(star.pos.x),
+        //     scale(star.pos.y),
+        //     Math.max(15, star.radius + 3))
+        // })
       })
 
       function scalePreservingRatio(fromDim, toDim) {
