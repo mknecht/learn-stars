@@ -8,7 +8,7 @@
     <span href="#" class="btn" flow-btn flow-attrs="{accept:'image/*'}">Upload a file</span> or drop it here.
   </div>
 
-  <starmap ng-show="$flow.files.length"></starmap>
+  <starmap data-event-id="image-uploaded" ng-show="$flow.files.length"></starmap>
   <canvas id="caman-canvas" ng-show="debug"></canvas>
 
   <div>

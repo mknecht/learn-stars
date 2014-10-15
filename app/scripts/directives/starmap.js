@@ -1,3 +1,4 @@
+/*global angular */
 'use strict';
 
 /**
@@ -11,7 +12,10 @@ angular.module('learnStarsApp')
     return {
       controller: 'StarmapCtrl',
       controllerAs: 'starmapCtrl',
-      template: '<canvas id="fabric-canvas"></canvas>',
-      restrict: 'E'
+      template: '<canvas></canvas>',
+      restrict: 'E',
+      link: function postLink(scope, iElement, iAttrs, controller, transcludeFn) {
+        controller.init(iElement[0].children[0], iAttrs.eventId)
+      }
     };
   });
